@@ -8,7 +8,6 @@ import (
 type parser struct {
 }
 
-
 func (p parser) parse (raw string) Result {
 	hex := ""
 	for i := 0; i < 66*4; i+=4 {
@@ -37,8 +36,6 @@ func (p parser) parse (raw string) Result {
 	result.rain = p.getRain(hex)
 	result.windSpeed = p.getWindSpeed(hex)
 	result.windDirection = p.getWindDirection(hex)
-
-	fmt.Println(result)
 
 	return result
 }

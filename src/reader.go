@@ -14,10 +14,10 @@ type Reader struct {
 	scanner *bufio.Scanner
 	noise uint16
 	parser parser
-	ret chan Result
+	ret *chan Result
 }
 
-func NewReader(stream *os.File, noise uint16, ret chan Result) Reader {
+func NewReader(stream *os.File, noise uint16, ret *chan Result) Reader {
 	obj := Reader{}
 	obj.stream = stream
 	obj.noise = noise
@@ -76,18 +76,17 @@ func (r Reader) read() {
 		}
 
 		if len(samples) > 1500 {
-			r.processSamples(samples)
+			r.processSamples(&samples)
 		}
 	}
 }
 
-func (r Reader) processSamples(samples []bool) {
+func (r Reader) processSamples(samples *[]bool) {
 	var buffer string
-
 	var prevSample bool = false
 	var countPrevSamples uint16 = 0
 
-	for _, sample := range samples {
+	for _, sample := range *samples {
 		if sample == prevSample {
 			countPrevSamples++
 			continue
@@ -114,6 +113,6 @@ func (r Reader) processSamples(samples []bool) {
 
 	res := r.parser.parse(buffer)
 	if res.stationId != ""  {
-		r.ret <- res
+		*r.ret <- res
 	}
 }

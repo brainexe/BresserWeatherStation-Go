@@ -13,12 +13,13 @@ func main () {
 	fmt.Printf("Started with noise %d\n", uint16(*noise))
 	var ret = make(chan Result)
 
-	reader := NewReader(os.Stdin, uint16(*noise), ret)
+	reader := NewReader(os.Stdin, uint16(*noise), &ret)
+	formatter := NewFormatter()
+
 	go reader.read()
 
-	for samples := range ret {
-		fmt.Println(samples)
+	for result := range ret {
+		fmt.Println(formatter.Format(result))
 	}
 
-	fmt.Println("done")
 }
