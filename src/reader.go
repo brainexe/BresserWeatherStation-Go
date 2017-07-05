@@ -28,51 +28,51 @@ func NewReader(stream *os.File, noise uint16, ret chan Result) Reader {
 }
 
 func (r Reader) readByte() uint16 {
-	var i int16
+	var i uint16
 
 	e := binary.Read(r.stream, binary.LittleEndian, &i)
 	if e == io.EOF {
+		// todo matze
 		panic("End of file");
 	}
 
-	return uint16(i) // todo matze
+	return i
 }
 
 func (r Reader) read() {
 	r.scanner = bufio.NewScanner(r.stream)
 
-	var samples []uint16
+	var samples []bool
 	var sample uint16
-	var count_prev_samples uint16 = 0
-	var prev_sample uint16 = 0
-	count_prev_samples++
+	var countPrevSamples uint16 = 0
+	var prevSample uint16 = 0
 
 	for {
-		samples = []uint16{}
+		samples = []bool{}
 		sample = r.readByte()
 		for sample <= r.noise {
 			sample = r.readByte()
 		}
 
 		for {
-			samples = append(samples, sample)
+			samples = append(samples, sample > 0)
 			sample = r.readByte()
 
 			if sample <= r.noise {
 				sample = 0
 			}
 
-			if sample == 0 && prev_sample == 0 && count_prev_samples > 300 {
+			if sample == 0 && prevSample == 0 && countPrevSamples > 300 {
 				break
 			}
 
-			if sample == prev_sample {
-				count_prev_samples += 1
+			if sample == prevSample {
+				countPrevSamples++
 			} else {
-				count_prev_samples = 0
+				countPrevSamples = 0
 			}
 
-			prev_sample = sample
+			prevSample = sample
 		}
 
 		if len(samples) > 1500 {
@@ -81,18 +81,13 @@ func (r Reader) read() {
 	}
 }
 
-func (r Reader) processSamples(sample []uint16) {
-	var packet []bool
+func (r Reader) processSamples(samples []bool) {
 	var buffer string
 
 	var prevSample bool = false
 	var countPrevSamples uint16 = 0
 
-	for _, byte := range sample {
-		packet = append(packet, byte > 0)
-	}
-
-	for _, sample := range packet {
+	for _, sample := range samples {
 		if sample == prevSample {
 			countPrevSamples++
 			continue
