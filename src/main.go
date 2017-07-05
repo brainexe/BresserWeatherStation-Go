@@ -10,12 +10,11 @@ func main () {
 	noise := flag.Int("noise", 700, "noise value")
 	flag.Parse()
 
-	reader := NewReader(os.Stdin, int16(*noise))
+	fmt.Printf("Started with noise %d\n", uint16(*noise))
+	var ret = make(chan Result)
 
-	fmt.Printf("Started with noise %d", int16(*noise))
-	var ret = make(chan []int16, 2)
-
-	go reader.read_samples(ret)
+	reader := NewReader(os.Stdin, uint16(*noise), ret)
+	go reader.read()
 
 	for samples := range ret {
 		fmt.Println(samples)

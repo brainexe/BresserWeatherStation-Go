@@ -6,49 +6,57 @@ import (
 	"encoding/binary"
 	"math"
 	"strings"
+	"io"
 )
 
-
-type reader struct {
+type Reader struct {
 	stream *os.File
-	noise int16
 	scanner *bufio.Scanner
+	noise uint16
+	parser parser
+	ret chan Result
 }
 
-func NewReader(stream *os.File, noise int16) reader {
-	obj := reader{}
+func NewReader(stream *os.File, noise uint16, ret chan Result) Reader {
+	obj := Reader{}
 	obj.stream = stream
 	obj.noise = noise
+	obj.parser = parser{}
+	obj.ret = ret
 
 	return obj
 }
 
-func (r reader) read_byte() int16 {
+func (r Reader) readByte() uint16 {
 	var i int16
 
-	binary.Read(r.stream, binary.LittleEndian, &i)
+	e := binary.Read(r.stream, binary.LittleEndian, &i)
+	if e == io.EOF {
+		panic("End of file");
+	}
 
-	return i
+	return uint16(i) // todo matze
 }
 
-func (r reader) read_samples(ret chan []int16) {
+func (r Reader) read() {
 	r.scanner = bufio.NewScanner(r.stream)
 
-	var samples []int16
-	var sample int16
-	var count_prev_samples int = 0
-	var prev_sample int16 = 0
+	var samples []uint16
+	var sample uint16
+	var count_prev_samples uint16 = 0
+	var prev_sample uint16 = 0
 	count_prev_samples++
 
 	for {
-		sample = r.read_byte()
+		samples = []uint16{}
+		sample = r.readByte()
 		for sample <= r.noise {
-			sample = r.read_byte()
+			sample = r.readByte()
 		}
 
 		for {
 			samples = append(samples, sample)
-			sample = r.read_byte()
+			sample = r.readByte()
 
 			if sample <= r.noise {
 				sample = 0
@@ -66,38 +74,38 @@ func (r reader) read_samples(ret chan []int16) {
 
 			prev_sample = sample
 		}
-		//ret <- samples
-		r.process_samples(samples)
-		samples = []int16{}
+
+		if len(samples) > 1500 {
+			r.processSamples(samples)
+		}
 	}
 }
 
-
-func (r reader) process_samples(sample []int16) {
+func (r Reader) processSamples(sample []uint16) {
 	var packet []bool
 	var buffer string
 
-	var prev_sample bool = false
-	var count_prev_samples int = 0
+	var prevSample bool = false
+	var countPrevSamples uint16 = 0
 
 	for _, byte := range sample {
 		packet = append(packet, byte > 0)
 	}
 
 	for _, sample := range packet {
-		if sample == prev_sample {
-			count_prev_samples++
+		if sample == prevSample {
+			countPrevSamples++
 			continue
 		}
-		var rate int = int(math.Ceil(float64(count_prev_samples) / 6))
-		if prev_sample {
+		var rate int = int(math.Ceil(float64(countPrevSamples) / 6))
+		if prevSample {
 			buffer += strings.Repeat("1", rate)
 		} else {
 			buffer += strings.Repeat("0", rate)
 		}
 
-		prev_sample = sample
-		count_prev_samples = 0
+		prevSample = sample
+		countPrevSamples = 0
 	}
 
 	buffer = strings.Trim(buffer, "0")
@@ -109,50 +117,8 @@ func (r reader) process_samples(sample []int16) {
 		return
 	}
 
-	r.process_packet(buffer)
+	res := r.parser.parse(buffer)
+	if res.stationId != ""  {
+		r.ret <- res
+	}
 }
-
-func (r reader) process_packet(buffer string) {
-	parser := parser{}
-	parser.parse(buffer)
-}
-
-	/* def process_signal(self, samples):
-
-        buffer = ""
-
-        #Normalising the samples
-        for index, sample in enumerate(samples):
-            if samples[index] > 0:
-                #print "%d -> 1" % samples[index]
-                samples[index] = 1
-            else:
-                #print "%d -> 0" % samples[index]
-                samples[index] = 0
-
-        prev_sample = 0
-        count_prev_samples = 0
-
-        #Reducing the samples
-        for sample in samples:
-            if sample == prev_sample:
-                count_prev_samples += 1
-                continue
-
-            #6 is the rate for a 48Khz sampling
-            rate = math.ceil(float(count_prev_samples) / 6)
-            buffer+=str(prev_sample) * int(rate)
-
-            prev_sample = sample
-            count_prev_samples = 0
-
-        #Stripping zeros from the signal
-        buffer = buffer.strip("0")
-
-        #If the buffer size is < 256 and > 252, probably the original packet
-        #ends with 0s which has been stripped, so let's compensate
-        if len(buffer) > 252 and len(buffer) < 264:
-            buffer += "0" * (264 - len(buffer))
-
-        self.process_packet(buffer)
-        */
