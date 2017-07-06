@@ -107,7 +107,7 @@ func (r Reader) processSamples(samples *[]bool) {
 		buffer += strings.Repeat("0", (264 - len(buffer)))
 	}
 
-	if len(buffer) != 264 {
+	if len(buffer) != PACKAGE_LENGTHS {
 		return
 	}
 

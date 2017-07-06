@@ -5,12 +5,14 @@ import (
 	"fmt"
 )
 
+const PACKAGE_LENGTHS = 264
+
 type parser struct {
 }
 
 func (p parser) parse (raw string) Result {
 	hex := ""
-	for i := 0; i < 66*4; i+=4 {
+	for i := 0; i < PACKAGE_LENGTHS; i+=4 {
 		tmp, _ := strconv.ParseInt(raw[i:i+4], 2, 64)
 		hex += fmt.Sprintf("%x", tmp)
 	}
