@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 	"fmt"
+	"errors"
 )
 
 const PACKAGE_LENGTHS = 264
@@ -10,7 +11,7 @@ const PACKAGE_LENGTHS = 264
 type parser struct {
 }
 
-func (p parser) parse (raw string) Result {
+func (p parser) parse (raw string) (Result, error) {
 	hex := ""
 	for i := 0; i < PACKAGE_LENGTHS; i+=4 {
 		tmp, _ := strconv.ParseInt(raw[i:i+4], 2, 64)
@@ -19,12 +20,12 @@ func (p parser) parse (raw string) Result {
 
 	result := Result{}
 	if hex[0:10] != "aaaaaaaaaa" {
-		return result
+		return result, errors.New("invalid beginning")
 	}
 
 	for n := 0; n <= 25; n++ {
 		if p.getDigit(hex, n+14) ^ 0xf != p.getDigit(hex, n+40) {
-		//	return result
+			// return result, errors.New("checksum mismatch")
 		}
 		//	if ord(hex[14+n:15+n]) ^ 0xf != ord(hex[40+n:41+n]):
 		//	return 4
@@ -39,7 +40,7 @@ func (p parser) parse (raw string) Result {
 	result.windSpeed = p.getWindSpeed(hex)
 	result.windDirection = p.getWindDirection(hex)
 
-	return result
+	return result, nil
 }
 
 func (p parser) getStationId(hex string) StationId {

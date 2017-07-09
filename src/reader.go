@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"math"
 	"strings"
-	"io"
 )
 
 type Reader struct {
@@ -27,46 +26,39 @@ func NewReader(stream *os.File, noise uint16, ret *chan Result) Reader {
 	return obj
 }
 
-func (r Reader) readByte() uint16 {
-	var i uint16
-
-	e := binary.Read(r.stream, binary.LittleEndian, &i)
-	if e == io.EOF {
-		// todo matze
-		panic("End of file");
+func (r Reader) readBool() bool {
+	buff := make([]byte, 2)
+	if _, err := r.stream.Read(buff); err != nil {
+		panic(err)
 	}
 
-	return i
+	return binary.LittleEndian.Uint16(buff) > r.noise
 }
 
 func (r Reader) read() {
 	r.scanner = bufio.NewScanner(r.stream)
 
 	var samples []bool
-	var sample uint16
+	var sample bool
 	var countPrevSamples uint16 = 0
-	var prevSample uint16 = 0
+	var prevSample bool = false
 
 	for {
 		samples = []bool{}
-		sample = r.readByte()
-		for sample <= r.noise {
-			sample = r.readByte()
+
+		// fast fetch first set bit
+		for ; !sample; sample = r.readBool() {
 		}
 
 		for {
-			samples = append(samples, sample > 0)
-			sample = r.readByte()
+			samples = append(samples, sample)
+			sample = r.readBool()
 
-			if sample <= r.noise {
-				sample = 0
-			}
-
-			if sample == 0 && prevSample == 0 && countPrevSamples > 300 {
+			if sample == false && prevSample == false && countPrevSamples > 300 {
 				break
 			}
 
-			if sample == prevSample {
+			if sample == false {
 				countPrevSamples++
 			} else {
 				countPrevSamples = 0
@@ -104,15 +96,15 @@ func (r Reader) processSamples(samples *[]bool) {
 
 	buffer = strings.Trim(buffer, "0")
 	if len(buffer) > 252 && len(buffer) < 264 {
-		buffer += strings.Repeat("0", (264 - len(buffer)))
+		buffer += strings.Repeat("0", 264 - len(buffer))
 	}
 
 	if len(buffer) != PACKAGE_LENGTHS {
 		return
 	}
 
-	res := r.parser.parse(buffer)
-	if res.stationId != ""  {
+	res, err := r.parser.parse(buffer)
+	if err == nil  {
 		*r.ret <- res
 	}
 }
