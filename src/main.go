@@ -8,6 +8,7 @@ import (
 
 func main () {
 	noise := flag.Int("noise", 700, "noise value")
+	stopAtFirst := flag.Bool("stop-at-first", false, "noise value")
 	flag.Parse()
 
 	fmt.Printf("Started with noise %d\n", uint16(*noise))
@@ -20,6 +21,9 @@ func main () {
 
 	for result := range ret {
 		fmt.Println(formatter.Format(result))
+		if *stopAtFirst {
+			break;
+		}
 	}
 
 }
