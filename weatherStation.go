@@ -1,17 +1,16 @@
 package main
 
 import (
-	"os"
-	"fmt"
 	"flag"
+	"fmt"
+	"os"
 )
 
-func main () {
+func main() {
 	noise := flag.Int("noise", 700, "noise value")
 	stopAtFirst := flag.Bool("stop-at-first", false, "noise value")
 	flag.Parse()
 
-	fmt.Printf("Started with noise %d\n", uint16(*noise))
 	var ret = make(chan Result)
 
 	reader := NewReader(os.Stdin, uint16(*noise), &ret)
@@ -20,10 +19,9 @@ func main () {
 	go reader.read()
 
 	for result := range ret {
-		fmt.Println(formatter.Format(result))
+		fmt.Println(formatter.Format(&result))
 		if *stopAtFirst {
-			break;
+			break
 		}
 	}
-
 }

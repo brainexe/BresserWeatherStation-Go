@@ -1,19 +1,19 @@
 package main
 
 import (
-	"os"
 	"bufio"
 	"encoding/binary"
 	"math"
+	"os"
 	"strings"
 )
 
 type Reader struct {
-	stream *os.File
+	stream  *os.File
 	scanner *bufio.Scanner
-	noise uint16
-	parser parser
-	ret *chan Result
+	noise   uint16
+	parser  parser
+	ret     *chan Result
 }
 
 func NewReader(stream *os.File, noise uint16, ret *chan Result) Reader {
@@ -96,7 +96,7 @@ func (r Reader) processSamples(samples *[]bool) {
 
 	buffer = strings.Trim(buffer, "0")
 	if len(buffer) > 252 && len(buffer) < 264 {
-		buffer += strings.Repeat("0", 264 - len(buffer))
+		buffer += strings.Repeat("0", 264-len(buffer))
 	}
 
 	if len(buffer) != PACKAGE_LENGTHS {
@@ -104,7 +104,7 @@ func (r Reader) processSamples(samples *[]bool) {
 	}
 
 	res, err := r.parser.parse(buffer)
-	if err == nil  {
+	if err == nil {
 		*r.ret <- res
 	}
 }

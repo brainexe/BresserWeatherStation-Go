@@ -9,11 +9,11 @@ type WindSpeed uint8
 type RawData string
 
 type Result struct {
-	stationId StationId
-	temperature Temperature
-	humidity Humidity
-	windSpeed WindSpeed
+	stationId     StationId
+	temperature   Temperature
+	humidity      Humidity
+	windSpeed     WindSpeed
 	windDirection WindDirection
-	rain Rain
-	rawData RawData
+	rain          Rain
+	rawData       RawData
 }

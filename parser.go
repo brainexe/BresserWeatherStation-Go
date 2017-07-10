@@ -1,9 +1,9 @@
 package main
 
 import (
-	"strconv"
-	"fmt"
 	"errors"
+	"fmt"
+	"strconv"
 )
 
 const PACKAGE_LENGTHS = 264
@@ -11,9 +11,9 @@ const PACKAGE_LENGTHS = 264
 type parser struct {
 }
 
-func (p parser) parse (raw string) (Result, error) {
+func (p parser) parse(raw string) (Result, error) {
 	hex := ""
-	for i := 0; i < PACKAGE_LENGTHS; i+=4 {
+	for i := 0; i < PACKAGE_LENGTHS; i += 4 {
 		tmp, _ := strconv.ParseInt(raw[i:i+4], 2, 64)
 		hex += fmt.Sprintf("%x", tmp)
 	}
@@ -24,7 +24,7 @@ func (p parser) parse (raw string) (Result, error) {
 	}
 
 	for n := 0; n <= 25; n++ {
-		if p.getDigit(hex, n+14) ^ 0xf != p.getDigit(hex, n+40) {
+		if p.getDigit(hex, n+14)^0xf != p.getDigit(hex, n+40) {
 			// return result, errors.New("checksum mismatch")
 		}
 		//	if ord(hex[14+n:15+n]) ^ 0xf != ord(hex[40+n:41+n]):
@@ -65,33 +65,31 @@ func (p parser) getHumidity(hex string) Humidity {
 	hum_digit_1 := p.getDigit(hex, 58)
 	hum_digit_2 := p.getDigit(hex, 59)
 
-	return Humidity(hum_digit_1 * 10 + hum_digit_2)
+	return Humidity(hum_digit_1*10 + hum_digit_2)
 }
 
-func (p parser) getDigit (hex string, digit int) uint8 {
+func (p parser) getDigit(hex string, digit int) uint8 {
 	number, _ := strconv.ParseUint(hex[digit:digit+1], 16, 10)
 
 	return uint8(number)
 }
 
-func (p parser) getRain (hex string) Rain {
+func (p parser) getRain(hex string) Rain {
 	rain_digit_2 := p.getDigit(hex, 60)
 	rain_decimal := p.getDigit(hex, 61)
 	rain_digit_1 := p.getDigit(hex, 63)
 
-	return Rain(float32(rain_digit_1 * 10 + rain_digit_2) + (float32(rain_decimal)/float32(10)))
+	return Rain(float32(rain_digit_1*10+rain_digit_2) + (float32(rain_decimal) / float32(10)))
 }
 
-func (p parser) getWindDirection (hex string) WindDirection {
+func (p parser) getWindDirection(hex string) WindDirection {
 	return WindDirection(p.getDigit(hex, 48))
 }
 
-func (p parser) getWindSpeed (hex string) WindSpeed {
+func (p parser) getWindSpeed(hex string) WindSpeed {
 	wind_digit_1 := p.getDigit(hex, 49)
 	wind_digit_2 := p.getDigit(hex, 50)
 	wind_decimal := p.getDigit(hex, 51)
 
-	return WindSpeed(float32(wind_digit_1 * 10 + wind_digit_2) + (float32(wind_decimal)/float32(10)))
+	return WindSpeed(float32(wind_digit_1*10+wind_digit_2) + (float32(wind_decimal) / float32(10)))
 }
-
-
