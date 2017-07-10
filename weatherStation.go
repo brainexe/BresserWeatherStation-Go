@@ -16,7 +16,7 @@ func main() {
 	reader := NewReader(os.Stdin, uint16(*noise), &ret)
 	formatter := NewFormatter()
 
-	go reader.read()
+	go reader.Read()
 
 	for result := range ret {
 		fmt.Println(formatter.Format(&result))

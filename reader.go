@@ -26,16 +26,16 @@ func NewReader(stream *os.File, noise uint16, ret *chan Result) Reader {
 	return obj
 }
 
-func (r Reader) readBool() bool {
+func (r Reader) readBool() (bool, error) {
 	buff := make([]byte, 2)
 	if _, err := r.stream.Read(buff); err != nil {
-		panic(err)
+		return false, err
 	}
 
-	return binary.LittleEndian.Uint16(buff) > r.noise
+	return binary.LittleEndian.Uint16(buff) > r.noise, nil
 }
 
-func (r Reader) read() {
+func (r Reader) Read() {
 	r.scanner = bufio.NewScanner(r.stream)
 
 	var samples []bool
@@ -47,12 +47,16 @@ func (r Reader) read() {
 		samples = []bool{}
 
 		// fast fetch first set bit
-		for ; !sample; sample = r.readBool() {
+		for ; !sample; sample, _ = r.readBool() {
 		}
 
 		for {
 			samples = append(samples, sample)
-			sample = r.readBool()
+			sample, err := r.readBool()
+			if err != nil {
+				close(*r.ret)
+				return
+			}
 
 			if sample == false && prevSample == false && countPrevSamples > 300 {
 				break
